@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+<title>Top Click Arcade</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23ff7ab0'/%3E%3Cpath d='M8 19 a8 8 0 0 1 16 0 z' fill='%23ffd23f'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800&family=Russo+One&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  body{ margin:0; font-family:'Poppins',sans-serif; color:#fff; background:#15102a; overflow-x:hidden; touch-action:manipulation; }
+  .display{ font-family:'Russo One',sans-serif; }
+  .screen{ display:none; } .screen.on{ display:block; }
+  .wrap{ max-width:560px; margin:0 auto; padding:18px 16px 40px; }
+  #menu,#select{ min-height:100vh; background:
+    radial-gradient(800px 500px at 70% -10%, rgba(255,122,176,.4), transparent 60%),
+    radial-gradient(700px 500px at -10% 20%, rgba(155,108,240,.35), transparent 55%),
+    linear-gradient(180deg,#241640,#15102a); }
+  .title{ text-align:center; padding:28px 10px 6px; }
+  .title h1{ margin:0; font-size:clamp(26px,7vw,42px); letter-spacing:1px; background:linear-gradient(90deg,#ffd23f,#ff7ab0,#9b6cf0); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
+  .title p{ margin:10px 0 0; color:#cdb8e8; font-weight:600; font-size:14px; }
+  .gamecards{ display:grid; gap:13px; margin:16px 0; }
+  .gamecard{ display:flex; align-items:center; gap:16px; cursor:pointer; transition:.15s; text-align:left; background:linear-gradient(180deg,rgba(255,255,255,.09),rgba(255,255,255,.02)); border:2px solid rgba(255,255,255,.14); border-radius:20px; padding:18px 20px; }
+  .gamecard:active{ transform:scale(.98); } .gamecard:hover{ border-color:#ffd23f; }
+  .gamecard .ic{ font-size:42px; flex:0 0 auto; } .gamecard b{ font-size:19px; display:block; } .gamecard span{ color:#cdb8e8; font-size:12.5px; }
+  .pickhead{ text-align:center; margin:18px 0 10px; font-size:15px; color:#e7d8ff; font-weight:700; letter-spacing:1px; }
+  .grid{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .pick{ background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.02)); border:2px solid rgba(255,255,255,.12); border-radius:20px; padding:14px 12px 16px; cursor:pointer; transition:.15s; text-align:center; }
+  .pick:active{ transform:scale(.97); } .pick.sel{ border-color:#ffd23f; box-shadow:0 0 0 3px rgba(255,210,63,.35),0 12px 30px rgba(0,0,0,.4); transform:translateY(-3px); }
+  .pick .stage{ height:96px; display:flex; align-items:flex-end; justify-content:center; }
+  .pick .carunit{ width:120px; } .pick b{ display:block; margin-top:8px; font-size:16px; } .pick span{ font-size:11.5px; color:#cdb8e8; font-weight:600; }
+  .nameinput{ display:block; margin:18px auto 0; width:min(340px,92%); text-align:center; font:inherit; font-weight:700; font-size:16px; padding:13px; border-radius:14px; border:2px solid rgba(255,255,255,.18); background:rgba(255,255,255,.06); color:#fff; outline:none; }
+  .nameinput::placeholder{ color:#a294c4; } .nameinput:focus{ border-color:#ffd23f; }
+  .play{ display:block; margin:18px auto 0; font-family:'Russo One'; font-size:20px; letter-spacing:1px; border:0; cursor:pointer; background:linear-gradient(90deg,#ffd23f,#ff7ab0); color:#2a1638; padding:15px 46px; border-radius:40px; box-shadow:0 8px 24px rgba(255,122,176,.5); transition:.12s; }
+  .play:disabled{ opacity:.45; box-shadow:none; } .play:active{ transform:translateY(3px); }
+  .hint{ text-align:center; color:#b9a8d8; font-size:12px; margin-top:14px; line-height:1.5; }
+  .backrow{ display:flex; align-items:center; gap:10px; margin-bottom:6px; }
+  .backbtn{ background:rgba(255,255,255,.1); border:2px solid rgba(255,255,255,.2); color:#fff; border-radius:12px; padding:8px 14px; font:inherit; font-weight:700; cursor:pointer; }
+  .optlbl{ text-align:center; color:#cdb8e8; font-weight:700; font-size:12px; margin-top:12px; letter-spacing:1px; }
+  .optrow{ display:flex; gap:8px; justify-content:center; flex-wrap:wrap; margin-top:6px; }
+  .opt-pill{ background:rgba(255,255,255,.08); border:2px solid rgba(255,255,255,.18); color:#fff; border-radius:20px; padding:9px 14px; font:inherit; font-weight:700; font-size:13px; cursor:pointer; }
+  .opt-pill.sel{ background:#ffd23f; color:#2a1638; border-color:#ffd23f; }
+  .carunit{ position:relative; } .carunit .carsvg{ width:100%; display:block; filter:drop-shadow(0 6px 6px rgba(0,0,0,.35)); }
+  .carunit .driver{ position:absolute; top:14%; left:50%; transform:translateX(-50%); width:30%; z-index:2; } .carunit .driver svg{ width:100%; display:block; }
+
+  .scene{ position:relative; width:100%; height:84vh; max-height:760px; overflow:hidden; background:linear-gradient(180deg,#9ad8ff 0%,#ffc1ea 26%,#ffe0f4 42%,#ead0ff 49%); }
+  .sky-sun{ position:absolute; top:5%; left:50%; transform:translateX(-50%); width:76px; height:76px; border-radius:50%; background:radial-gradient(circle at 40% 40%,#fff6c2,#ffcf5e); box-shadow:0 0 60px rgba(255,207,94,.85); z-index:1; }
+  .cloud{ position:absolute; z-index:1; opacity:.9; font-size:42px; } @keyframes drift{ from{transform:translateX(0)} to{transform:translateX(40px)} }
+  .ground{ position:absolute; bottom:0; left:50%; width:340%; height:60%; transform:translateX(-50%) rotateX(68deg); transform-origin:bottom center;
+    background-image:repeating-linear-gradient(0deg,#ff89c9 0 50px,#ffd0ec 50px 100px),repeating-linear-gradient(0deg,#fff 0 5px,transparent 5px 50px),linear-gradient(90deg,#8fe3b6 0 33%,#fff 33% 34%,#5b6b86 34% 66%,#fff 66% 67%,#8fe3b6 67%);
+    background-size:60% 100px, 3px 50px, 100% 100%; background-position:center 0, center 0, 0 0; background-repeat:repeat-y, repeat-y, no-repeat; animation:road .6s linear infinite; box-shadow:inset 0 40px 60px rgba(0,0,0,.15); }
+  @keyframes road{ to{ background-position:center 100px, center 50px, 0 0; } }
+  .vignette{ position:absolute; inset:0; z-index:7; pointer-events:none; background:radial-gradient(120% 80% at 50% 42%, transparent 55%, rgba(20,8,40,.32)); }
+  .item{ position:absolute; left:50%; transform:translate(-50%,0); z-index:3; will-change:bottom,transform,left; } .item.tree{ z-index:2; }
+  .shadow{ position:absolute; left:50%; bottom:-6px; transform:translateX(-50%); width:80%; height:10px; border-radius:50%; background:rgba(0,0,0,.22); filter:blur(2px); }
+  .obst{ position:relative; width:96px; height:30px; border-radius:8px; border:3px solid #8a0f2e; background:repeating-linear-gradient(45deg,#ff2e5e 0 11px,#fff 11px 22px); box-shadow:0 5px 10px rgba(0,0,0,.3); }
+  .obst::before{ content:'⚠'; position:absolute; top:-19px; left:50%; transform:translateX(-50%); font-size:16px; }
+  .candy{ font-size:42px; filter:drop-shadow(0 4px 4px rgba(0,0,0,.3)); } .treeicon{ font-size:50px; filter:drop-shadow(0 5px 5px rgba(0,0,0,.25)); }
+  .finish{ width:140px; height:26px; background:repeating-conic-gradient(#fff 0 25%,#15102a 0 50%) 0 0/13px 13px; border:3px solid #fff; border-radius:4px; box-shadow:0 6px 14px rgba(0,0,0,.4); }
+  .rivalcar{ position:absolute; left:50%; transform:translate(-50%,0); z-index:3; transition:bottom .12s linear, transform .12s linear, left .2s ease; }
+  .playercar{ position:absolute; bottom:7%; left:50%; transform:translateX(-50%); width:min(150px,42%); z-index:6; transition:left .13s ease, transform .16s ease; }
+  .playercar .carunit{ animation:bob .32s ease-in-out infinite alternate; } @keyframes bob{ from{transform:translateY(0)} to{transform:translateY(-4px)} }
+  .playercar.leanL{ transform:translateX(-50%) rotate(-11deg); } .playercar.leanR{ transform:translateX(-50%) rotate(11deg); }
+  .playercar.boost .carunit{ animation:boostsh .25s; } @keyframes boostsh{ 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px) scale(1.06)} }
+  .playercar.crash .carunit{ animation:crashsh .3s; } @keyframes crashsh{ 0%,100%{transform:translateX(0) rotate(0)} 25%{transform:translateX(-8px) rotate(-5deg)} 75%{transform:translateX(8px) rotate(5deg)} }
+  .speedlines{ position:absolute; inset:0; pointer-events:none; opacity:0; z-index:5; background:repeating-linear-gradient(90deg,rgba(255,255,255,.55) 0 3px,transparent 3px 70px); mix-blend-mode:overlay; animation:zoom .25s linear infinite; transition:opacity .2s; }
+  .speedlines.on{ opacity:.55; } @keyframes zoom{ to{ background-position:-70px 0 } }
+  .hud{ position:absolute; top:0; left:0; right:0; padding:12px 14px; z-index:8; }
+  .prog{ position:relative; height:14px; background:rgba(40,15,40,.45); border:2px solid rgba(255,255,255,.6); border-radius:20px; }
+  .prog .fin{ position:absolute; right:-2px; top:-6px; font-size:16px; }
+  .pmark{ position:absolute; top:50%; width:16px; height:16px; border-radius:50%; transform:translate(-50%,-50%); border:2px solid #fff; transition:left .15s linear; box-shadow:0 1px 4px rgba(0,0,0,.4); }
+  .hudrow{ display:flex; justify-content:space-between; gap:8px; margin-top:8px; font-family:'Russo One'; font-size:14px; text-shadow:0 2px 4px rgba(0,0,0,.4); }
+  .quit{ position:absolute; top:10px; right:12px; z-index:12; width:38px; height:38px; border-radius:50%; border:2px solid rgba(255,255,255,.6); background:rgba(40,15,40,.4); color:#fff; font-size:18px; cursor:pointer; }
+  .ctrl{ position:absolute; bottom:16px; z-index:9; width:78px; height:78px; border-radius:50%; border:3px solid rgba(255,255,255,.65); background:rgba(40,15,55,.4); color:#fff; font-size:32px; display:flex; align-items:center; justify-content:center; user-select:none; }
+  .ctrl.l{ left:14px } .ctrl.r{ right:14px } .scene.qmode .ctrl{ display:none; }
+
+  .qpanel{ position:absolute; left:0; right:0; bottom:0; z-index:10; padding:18px 16px 22px; background:linear-gradient(180deg,rgba(30,12,42,0),rgba(30,12,42,.96) 22%); transform:translateY(105%); transition:transform .35s cubic-bezier(.2,.9,.3,1.2); }
+  .qpanel.show{ transform:translateY(0); }
+  .qbadge{ display:inline-block; font-family:'Russo One'; font-size:11px; letter-spacing:1px; background:#ffd23f; color:#2a1638; padding:4px 12px; border-radius:20px; margin-bottom:8px; }
+  .qtext{ font-size:18px; font-weight:800; margin:0 0 14px; line-height:1.35; background:linear-gradient(135deg,#ffe390,#ffb13c); color:#2a1638; border:3px solid #ffd23f; border-radius:14px; padding:14px 16px; box-shadow:0 6px 22px rgba(255,170,50,.5); }
+  .qopt{ display:block; width:100%; text-align:left; background:rgba(255,255,255,.1); border:2px solid rgba(255,255,255,.2); color:#fff; border-radius:14px; padding:13px 15px; margin:8px 0; font:inherit; font-weight:600; font-size:15px; cursor:pointer; transition:.1s; }
+  .qopt:active{ transform:scale(.98); } .qopt.right{ background:#2fbf78; border-color:#28a869; } .qopt.bad{ background:#ef5566; border-color:#d23c4d; }
+  .sboard{ position:absolute; top:0; left:0; right:0; z-index:8; display:flex; justify-content:center; align-items:center; gap:12px; padding:12px; }
+  .sb-team{ display:flex; align-items:center; gap:8px; background:rgba(15,10,28,.5); border:2px solid rgba(255,255,255,.4); border-radius:14px; padding:6px 12px; }
+  .sb-team .av{ width:30px; } .sb-team .av svg{ width:100%; display:block; } .sb-score{ font-family:'Russo One'; font-size:22px; }
+  .sb-time{ font-family:'Russo One'; font-size:18px; background:#ffd23f; color:#2a1638; padding:7px 12px; border-radius:12px; }
+  .hfloat{ position:absolute; top:34%; left:50%; transform:translateX(-50%); font-family:'Russo One'; font-size:30px; opacity:0; z-index:9; text-shadow:0 3px 8px rgba(0,0,0,.5); }
+  .hfloat.show{ animation:floatup .9s ease forwards; }
+  @keyframes floatup{ 0%{opacity:0; transform:translate(-50%,12px) scale(.6)} 30%{opacity:1} 100%{opacity:0; transform:translate(-50%,-42px) scale(1.2)} }
+
+  .sportscene{ position:relative; width:100%; height:84vh; max-height:760px; overflow:hidden; }
+  .figure{ position:relative; width:108px; margin:0 auto; } .figsvg{ width:100%; display:block; filter:drop-shadow(0 7px 6px rgba(0,0,0,.3)); }
+  .fhead{ position:absolute; top:13%; left:50%; transform:translateX(-50%); width:50%; } .fhead svg{ width:100%; display:block; }
+  .sportactor{ position:absolute; bottom:16%; left:50%; transform:translateX(-50%); z-index:4; }
+  .sportactor.hit-dash .figure{ animation:spDash .55s ease; } .sportactor.hit-spin .figure{ animation:spSpin .7s ease; } .sportactor.missx .figure{ animation:spMiss .5s ease; }
+  @keyframes spDash{ 0%{transform:translateX(0)} 50%{transform:translateX(70px) scale(1.15)} 100%{transform:translateX(0)} }
+  @keyframes spSpin{ 0%{transform:rotate(0) scale(1)} 55%{transform:rotate(360deg) scale(1.35)} 100%{transform:rotate(360deg)} }
+  @keyframes spMiss{ 0%,100%{transform:translateX(0)} 25%{transform:translateX(-13px) rotate(-9deg)} 75%{transform:translateX(13px) rotate(9deg)} }
+  .sportactor.pose-swim .figure{ animation:swimfloat 1s ease-in-out infinite alternate; }
+  @keyframes swimfloat{ from{transform:rotate(-70deg) translateY(0)} to{transform:rotate(-70deg) translateY(-10px)} }
+  .sportactor.pose-dance .figure{ animation:sway .55s ease-in-out infinite alternate; } @keyframes sway{ from{transform:rotate(-7deg)} to{transform:rotate(7deg)} }
+  .sball{ position:absolute; bottom:33%; left:50%; transform:translateX(-50%); width:44px; height:44px; z-index:5; }
+  .sball.basket{ background:radial-gradient(circle at 35% 30%,#ffb066,#e8702a 72%); border-radius:50%; border:2px solid #b8531a; box-shadow:inset -4px -5px 7px rgba(0,0,0,.25); }
+  .sball.basket::before{ content:''; position:absolute; left:50%; top:1px; bottom:1px; width:2px; transform:translateX(-50%); background:rgba(120,50,10,.55); }
+  .sball.tennis{ background:radial-gradient(circle at 35% 30%,#e6f56a,#a7c92c 72%); border-radius:50%; border:2px solid #7f9e1f; }
+  .sball.shoot{ animation:ballShoot .7s ease-out forwards; } .sball.volley{ animation:ballVolley .6s ease forwards; }
+  @keyframes ballShoot{ 0%{transform:translateX(-50%) translateY(0) scale(1)} 60%{transform:translateX(-50%) translateY(-44vh) scale(.42)} 100%{transform:translateX(-50%) translateY(-44vh) scale(.36); opacity:0} }
+  @keyframes ballVolley{ 0%{transform:translateX(-50%) translateY(0) scale(1)} 50%{transform:translateX(-50%) translateY(-40vh) scale(.5)} 100%{transform:translateX(-50%) translateY(-26vh) scale(.4); opacity:0} }
+  .env{ position:absolute; inset:0; z-index:1; pointer-events:none; }
+  .env-hoops{ background:linear-gradient(180deg,#171d3a 0%,#22305c 24%,#c98a4a 24%,#e0a565 100%); }
+  .env-padel{ background:linear-gradient(180deg,#10456e 0%,#2f86c5 30%,#43b0e0 100%); }
+  .env-swim{ background:linear-gradient(180deg,#06324d 0%,#0e7bb0 26%,#1fa3d6 100%); }
+  .env-dance{ background:linear-gradient(180deg,#1a0726 0%,#5a157a 40%,#a02b9a 100%); }
+  .bbset{ position:absolute; top:6%; left:50%; transform:translateX(-50%); }
+  .bb{ width:120px; height:64px; background:rgba(255,255,255,.94); border:4px solid #2a3350; border-radius:6px; margin:0 auto; position:relative; }
+  .bb::after{ content:''; position:absolute; left:50%; bottom:8px; transform:translateX(-50%); width:44px; height:30px; border:3px solid #ff6a3d; }
+  .rim2{ width:72px; height:9px; background:#ff6a3d; border-radius:6px; margin:-4px auto 0; }
+  .net2{ width:58px; height:32px; margin:0 auto; background:repeating-linear-gradient(90deg,rgba(255,255,255,.9) 0 2px,transparent 2px 9px); clip-path:polygon(0 0,100% 0,80% 100%,20% 100%); }
+  .carc{ position:absolute; bottom:0; left:50%; transform:translateX(-50%); width:86%; height:58%; border:5px solid rgba(255,255,255,.5); border-bottom:0; border-radius:50% 50% 0 0; }
+  .pnet{ position:absolute; top:50%; left:0; right:0; height:46px; transform:translateY(-50%); background:repeating-linear-gradient(90deg,rgba(255,255,255,.85) 0 2px,transparent 2px 8px); border-top:3px solid #fff; border-bottom:3px solid #fff; }
+  .lanes2{ position:absolute; inset:0; background:repeating-linear-gradient(0deg,transparent 0 56px,rgba(255,255,255,.16) 56px 62px); }
+  .spot{ position:absolute; top:-6%; width:0; height:0; border-left:55px solid transparent; border-right:55px solid transparent; border-bottom:330px solid rgba(255,255,255,.13); }
+  .spot.s1{ left:16%; transform:rotate(13deg); } .spot.s2{ right:16%; transform:rotate(-13deg); }
+  .dfloor{ position:absolute; bottom:0; left:0; right:0; height:30%; background:repeating-linear-gradient(90deg,#ff5ec6 0 40px,#7a3cff 40px 80px); opacity:.45; }
+
+  .timing{ position:absolute; left:0; right:0; bottom:0; z-index:11; padding:22px 18px 28px; text-align:center; background:linear-gradient(180deg,rgba(30,12,42,0),rgba(30,12,42,.96) 25%); transform:translateY(105%); transition:transform .3s cubic-bezier(.2,.9,.3,1.2); }
+  .timing.show{ transform:translateY(0); } .timing .tlbl{ font-weight:700; margin-bottom:10px; color:#ffd23f; font-size:14px; }
+  .tbar{ position:relative; height:36px; background:rgba(255,255,255,.12); border:2px solid rgba(255,255,255,.3); border-radius:20px; overflow:hidden; margin-bottom:14px; }
+  .tzone{ position:absolute; left:36%; width:28%; top:0; bottom:0; background:rgba(47,191,120,.5); }
+  .tbull{ position:absolute; left:46.5%; width:7%; top:0; bottom:0; background:rgba(255,210,63,.85); }
+  .tmark{ position:absolute; top:-2px; bottom:-2px; width:6px; background:#fff; border-radius:3px; box-shadow:0 0 10px #fff; left:0; }
+  .shootbtn{ font-family:'Russo One'; font-size:20px; border:0; border-radius:30px; padding:14px 44px; background:linear-gradient(90deg,#ffd23f,#ff7ab0); color:#2a1638; cursor:pointer; } .shootbtn:active{ transform:translateY(2px); }
+
+  .scrim{ position:fixed; inset:0; background:rgba(15,8,26,.8); backdrop-filter:blur(3px); display:none; align-items:center; justify-content:center; padding:22px; z-index:50; } .scrim.on{ display:flex; }
+  .result{ background:linear-gradient(180deg,#2a1846,#1c1030); border:2px solid rgba(255,255,255,.16); border-radius:24px; padding:30px 26px; max-width:380px; width:100%; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,.6); }
+  .result .medal{ font-size:64px; } .result h2{ font-family:'Russo One'; margin:6px 0; font-size:24px; } .result p{ color:#cdb8e8; font-weight:600; margin:4px 0; } .result .xp{ color:#ffd23f; font-weight:800; font-size:19px; margin:10px 0 18px; }
+  .rbtns{ display:flex; gap:10px; justify-content:center; flex-wrap:wrap; } .rbtn{ font-family:'Russo One'; border:0; cursor:pointer; border-radius:30px; padding:13px 22px; font-size:14px; }
+  .rbtn.go{ background:linear-gradient(90deg,#ffd23f,#ff7ab0); color:#2a1638; } .rbtn.alt{ background:rgba(255,255,255,.12); color:#fff; }
+  .count{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; z-index:14; pointer-events:none; }
+  .count span{ font-family:'Russo One'; font-size:90px; color:#fff; text-shadow:0 6px 20px rgba(0,0,0,.5); animation:cpop .7s ease; }
+  @keyframes cpop{ from{transform:scale(2.2);opacity:0} 40%{opacity:1} to{transform:scale(.6);opacity:0} }
+  .mute{ position:fixed; top:12px; left:12px; z-index:120; width:40px; height:40px; border-radius:50%; border:2px solid rgba(255,255,255,.4); background:rgba(40,15,55,.5); color:#fff; font-size:17px; cursor:pointer; }
+  .confetti{ position:fixed; top:18%; width:11px; height:15px; border-radius:2px; z-index:200; pointer-events:none; animation:fall 1.6s ease-in forwards; }
+  @keyframes fall{ to{ transform:translate(var(--dx),74vh) rotate(var(--rot)); opacity:0; } }
+</style>
+</head>
+<body>
+<button id="muteBtn" class="mute" onclick="toggleMute()">🔊</button>
+
+<div id="menu" class="screen on"><div class="wrap">
+  <div class="title"><h1 class="display">TOP CLICK ARCADE</h1><p>Pick a game 🎮 · learn marketing by playing</p></div>
+  <div class="gamecards" id="gameCards"></div>
+</div></div>
+
+<div id="select" class="screen"><div class="wrap">
+  <div class="backrow"><button class="backbtn" onclick="show('menu')">← Games</button></div>
+  <div class="title"><h1 class="display" id="selTitle">CHOOSE PLAYER</h1></div>
+  <div class="pickhead">PICK YOUR CHARACTER</div>
+  <div class="grid" id="pickGrid"></div>
+  <div id="raceOpts" style="display:none">
+    <div class="optlbl">TRACK</div><div class="optrow" id="trackRow"></div>
+    <div class="optlbl">DIFFICULTY</div><div class="optrow" id="diffRow"></div>
+  </div>
+  <input id="nameInput" class="nameinput" maxlength="14" placeholder="Your name">
+  <button id="playBtn" class="play display" onclick="beginGame()" disabled>PLAY ▶</button>
+  <p class="hint" id="selHint"></p>
+</div></div>
+
+<div id="race" class="screen"><div class="scene" id="scene">
+  <div class="sky-sun"></div>
+  <div class="cloud" id="cl1" style="top:10%;left:12%">☁️</div><div class="cloud" id="cl2" style="top:18%;left:62%;font-size:34px">☁️</div><div class="cloud" id="cl3" style="top:7%;left:78%;font-size:28px">☁️</div>
+  <div class="ground" id="ground"></div><div id="scenery"></div><div id="items"></div><div id="rivals"></div>
+  <div class="playercar" id="playerCar"></div><div class="speedlines" id="speedlines"></div><div class="vignette"></div>
+  <div class="hud"><div class="prog" id="prog"><span class="fin">🏁</span></div>
+    <div class="hudrow"><span id="posLabel">1st</span><span id="puLabel"></span><span id="candyLabel">🍬 0</span><span id="distLabel">0%</span></div></div>
+  <button class="quit" onclick="quitRace()">✕</button>
+  <div class="ctrl l" id="ctrlL">◀</div><div class="ctrl r" id="ctrlR">▶</div>
+  <div class="count" id="count"></div><div class="qpanel" id="qpanel"></div>
+</div></div>
+
+<div id="sport" class="screen"><div class="sportscene" id="sportScene">
+  <div class="env" id="sportEnv"></div>
+  <div class="sportactor" id="sportActor"></div>
+  <div class="sball" id="sball"></div>
+  <div class="sboard" id="sboard"></div>
+  <button class="quit" onclick="quitSport()">✕</button>
+  <div class="hfloat" id="sfloat"></div><div class="count" id="scount"></div>
+  <div class="qpanel" id="sqpanel"></div>
+  <div class="timing" id="timing"><div class="tlbl">⏱ Tap SHOOT when the marker hits the centre!</div><div class="tbar"><div class="tzone"></div><div class="tbull"></div><div class="tmark" id="tmark"></div></div><button class="shootbtn" onclick="lockShot()">SHOOT! 🎯</button></div>
+</div></div>
+
+<div class="scrim" id="scrim"><div class="result" id="resultCard"></div></div>
+
+<script>
+const CHARS=[
+  {id:'seo',name:'SEO Explorer',colour:'#2fbf78',blurb:'Free-traffic master'},
+  {id:'ads',name:'Ads Gunner',colour:'#f5a623',blurb:'Paid-ads pro'},
+  {id:'social',name:'Social Star',colour:'#37a6e6',blurb:'Ruler of the feeds'},
+  {id:'ai',name:'AI Apprentice',colour:'#9b6cf0',blurb:'The all-rounder'},
+];
+const AVATARS={
+  seo:`<svg viewBox='0 0 64 64'><circle cx='32' cy='34' r='15' fill='#ffd9b5'/><path d='M20 24 a12 9 0 0 1 24 0z' fill='#2c8f63'/><rect x='14' y='23' width='36' height='4' rx='2' fill='#1f6b48'/><circle cx='27' cy='34' r='2' fill='#2a2a2a'/><circle cx='37' cy='34' r='2' fill='#2a2a2a'/><path d='M27 40 q5 4 10 0' stroke='#2a2a2a' stroke-width='2' fill='none' stroke-linecap='round'/></svg>`,
+  ads:`<svg viewBox='0 0 64 64'><circle cx='32' cy='34' r='15' fill='#ffd9b5'/><path d='M18 33 a14 14 0 0 1 28 0' stroke='#3a4663' stroke-width='3.5' fill='none'/><rect x='14' y='32' width='6' height='10' rx='3' fill='#3a4663'/><rect x='44' y='32' width='6' height='10' rx='3' fill='#3a4663'/><circle cx='27' cy='34' r='2' fill='#2a2a2a'/><circle cx='37' cy='34' r='2' fill='#2a2a2a'/><path d='M27 40 q5 4 10 0' stroke='#2a2a2a' stroke-width='2' fill='none' stroke-linecap='round'/></svg>`,
+  social:`<svg viewBox='0 0 64 64'><circle cx='32' cy='35' r='15' fill='#ffd9b5'/><path d='M32 6 L35 14 L43 15 L36 18 L32 26 L28 18 L21 15 L29 14 Z' fill='#ffd23f' stroke='#2a3350' stroke-width='1'/><circle cx='27' cy='35' r='2' fill='#2a2a2a'/><circle cx='37' cy='35' r='2' fill='#2a2a2a'/><path d='M27 41 q5 4 10 0' stroke='#2a2a2a' stroke-width='2' fill='none' stroke-linecap='round'/></svg>`,
+  ai:`<svg viewBox='0 0 64 64'><line x1='32' y1='8' x2='32' y2='16' stroke='#3a4663' stroke-width='2.5'/><circle cx='32' cy='7' r='3.5' fill='#ffd23f'/><rect x='16' y='16' width='32' height='28' rx='8' fill='#cdd6ea' stroke='#3a4663' stroke-width='2.5'/><rect x='23' y='27' width='6' height='6' rx='1.5' fill='#37a6e6'/><rect x='35' y='27' width='6' height='6' rx='1.5' fill='#37a6e6'/><path d='M26 38 h12' stroke='#3a4663' stroke-width='2.5' stroke-linecap='round'/></svg>`,
+};
+function carRear(col){ return `<svg class="carsvg" viewBox="0 0 110 92"><ellipse cx="55" cy="86" rx="40" ry="7" fill="rgba(0,0,0,.22)"/><rect x="20" y="22" width="70" height="8" rx="4" fill="#222a3d"/><rect x="24" y="16" width="7" height="12" rx="2" fill="#222a3d"/><rect x="79" y="16" width="7" height="12" rx="2" fill="#222a3d"/><rect x="10" y="52" width="13" height="26" rx="5" fill="#14181f"/><rect x="87" y="52" width="13" height="26" rx="5" fill="#14181f"/><path d="M24 78 L30 34 L80 34 L86 78 Q86 82 81 82 L29 82 Q24 82 24 78 Z" fill="${col}" stroke="#14181f" stroke-width="2.5" stroke-linejoin="round"/><path d="M40 35 L45 21 L65 21 L70 35 Z" fill="#12203a"/><rect x="29" y="64" width="16" height="9" rx="3" fill="#ff4d5e"/><rect x="65" y="64" width="16" height="9" rx="3" fill="#ff4d5e"/><rect x="30" y="76" width="50" height="6" rx="3" fill="#d6dcea"/></svg>`; }
+function carUnit(col,av){ return `<div class="carunit"><div class="driver">${av}</div>${carRear(col)}</div>`; }
+function figureSVG(col){ return `<svg class="figsvg" viewBox="0 0 100 150"><ellipse cx="50" cy="144" rx="26" ry="5" fill="rgba(0,0,0,.25)"/><rect x="38" y="98" width="10" height="42" rx="5" fill="#3a3550"/><rect x="52" y="98" width="10" height="42" rx="5" fill="#3a3550"/><rect x="34" y="136" width="17" height="8" rx="3" fill="#fff"/><rect x="49" y="136" width="17" height="8" rx="3" fill="#fff"/><rect x="33" y="58" width="34" height="46" rx="13" fill="${col}"/><rect x="20" y="60" width="12" height="32" rx="6" fill="${col}"/><rect x="68" y="60" width="12" height="32" rx="6" fill="${col}"/><circle cx="26" cy="94" r="6.5" fill="#ffd9b5"/><circle cx="74" cy="94" r="6.5" fill="#ffd9b5"/></svg>`; }
+
+const QUESTIONS=[
+  {q:"What does SEO get you?",o:["Free organic Google rankings","Instant paid clicks","Social followers"],a:0},
+  {q:"In Google Ads, you pay when…",o:["Someone clicks","Someone sees the ad","A monthly flat fee"],a:0},
+  {q:"A keyword is…",o:["What someone types into Google","A password","A type of ad"],a:0},
+  {q:"A ROAS of 5x means…",o:["R5 back per R1 spent","5% clicked","5 clicks"],a:0},
+  {q:"A backlink is…",o:["Another site linking to yours","A broken link","A keyword"],a:0},
+  {q:"Retargeting shows ads to…",o:["Past website visitors","Brand new people only","Competitors"],a:0},
+  {q:"If a page isn't indexed it…",o:["Can't appear on Google","Ranks #1","Loads faster"],a:0},
+  {q:"\"Meta\" means…",o:["Facebook & Instagram","Google","Email"],a:0},
+  {q:"A negative keyword…",o:["Blocks irrelevant searches","Raises your bid","Is a bad review"],a:0},
+  {q:"CPC stands for…",o:["Cost per click","Clicks per customer","Cost per conversion"],a:0},
+  {q:"The widest, riskiest match type is…",o:["Broad","Exact","Phrase"],a:0},
+  {q:"Tag Manager is used to…",o:["Collect & send tracking data","Design graphics","Write blogs"],a:0},
+  {q:"Looker Studio is for…",o:["Reporting dashboards","Crawling sites","Running ads"],a:0},
+  {q:"CTR is calculated as…",o:["Clicks ÷ impressions","Cost ÷ clicks","Sales ÷ spend"],a:0},
+  {q:"A conversion is…",o:["The action you want (lead/sale)","A page view","An impression"],a:0},
+  {q:"Screaming Frog is used to…",o:["Crawl a site for SEO issues","Make ads","Send email"],a:0},
+  {q:"The order to get on Google is…",o:["Crawl, index, rank","Rank, crawl, index","Index, rank, crawl"],a:0},
+  {q:"Social creative is usually made in…",o:["Canva","Search Console","Ads Editor"],a:0},
+  {q:"A higher Quality Score gives you…",o:["Lower CPC & better position","Higher CPC","Nothing"],a:0},
+  {q:"Ahrefs & SEMrush are mainly for…",o:["SEO & keyword research","Designing logos","Sending invoices"],a:0},
+  {q:"The Meta Pixel…",o:["Tracks website visitors","Designs ads","Hosts the site"],a:0},
+  {q:"A lookalike audience finds…",o:["New people like your best customers","Past visitors","Staff"],a:0},
+  {q:"Merchant Centre powers…",o:["Google Shopping ads","Backlinks","Emails"],a:0},
+  {q:"Google Ads Editor is best for…",o:["Bulk edits offline","Drawing","Crawling"],a:0},
+  {q:"GA4 shows you…",o:["What people do on your site","Backlinks","Ad designs"],a:0},
+  {q:"Long-tail keywords are…",o:["Longer & more specific","Short & generic","Always paid"],a:0},
+  {q:"Organic traffic is…",o:["Free (not ads)","Paid per click","Always social"],a:0},
+  {q:"'buy shoes online' shows which intent?",o:["Transactional","Informational","Navigational"],a:0},
+  {q:"Quality Score rates…",o:["Keyword, ad & page relevance","Your budget","Your logo"],a:0},
+  {q:"Paid ads stop working when…",o:["You stop paying","You get a backlink","You post organically"],a:0},
+  {q:"The social funnel order is…",o:["Awareness, engagement, conversion","Conversion first","Random"],a:0},
+  {q:"SEO results usually take…",o:["Months","Minutes","Seconds"],a:0},
+  {q:"Bounce rate is…",o:["% who leave after one page","Your ad budget","A backlink"],a:0},
+  {q:"A/B testing means…",o:["Comparing two versions to see which wins","Building backlinks","Two ad accounts"],a:0},
+  {q:"\"Above the fold\" means…",o:["Visible before scrolling","Below the footer","Print only"],a:0},
+  {q:"What is a CTA?",o:["A call to action","A click tracking app","Cost to advertise"],a:0},
+  {q:"A 301 is a…",o:["Permanent redirect","404 error","Ad type"],a:0},
+  {q:"Open rate is a metric for…",o:["Email","Shopping feeds","Backlinks"],a:0},
+  {q:"A landing page's job is to…",o:["Convert the visitor","List every product","Show the blog"],a:0},
+  {q:"A 'lead' is…",o:["A potential customer's interest","A backlink","A pixel"],a:0},
+  {q:"Conversion rate is…",o:["% of visitors who convert","Total clicks","Cost per click"],a:0},
+  {q:"What is 'CRO'?",o:["Conversion rate optimisation","Cost of running ads","Creative rotation"],a:0},
+  {q:"A marketing 'funnel' describes…",o:["The path to a sale","A backlink type","A report"],a:0},
+  {q:"Reach (social) means…",o:["Unique people who saw it","Total likes","Follower count"],a:0},
+  {q:"Click fraud is…",o:["Fake / invalid clicks","A good thing","A report"],a:0},
+  {q:"Anchor text is…",o:["The clickable words of a link","A boat term","A heading tag"],a:0},
+  {q:"A sitemap helps…",o:["Google find your pages","Design the homepage","Track clicks"],a:0},
+  {q:"Engagement rate measures…",o:["How much people interact","Ad spend","Page count"],a:0},
+  {q:"Impression share is…",o:["% of eligible times your ad showed","Clicks ÷ cost","Followers gained"],a:0},
+  {q:"Responsive design means the site…",o:["Adapts to any screen","Loads ads","Sends email"],a:0},
+  {q:"Search volume is…",o:["How many search a term monthly","Its price","Its length"],a:0},
+  {q:"Performance Max runs…",o:["Across all of Google","Only on Bing","Only email"],a:0},
+  {q:"A 'bid' in ads is…",o:["The max you'll pay per click","Your total budget","Your logo"],a:0},
+  {q:"Dwell time is…",o:["How long someone stays","Load speed","Bid amount"],a:0},
+  {q:"Cost per acquisition (CPA) is…",o:["Cost to get one conversion","Cost per click","Clicks per ad"],a:0},
+  {q:"Spend R2,000, get 8 leads. CPA is…",o:["R250","R16,000","8"],a:0},
+  {q:"100 clicks, 5 sales. Conversion rate?",o:["5%","20%","500%"],a:0},
+  {q:"50 clicks from 2,000 impressions. CTR?",o:["2.5%","40%","250%"],a:0},
+  {q:"Best fix for high clicks but NO conversions?",o:["Check landing page & tracking","Just raise the budget","Add more keywords"],a:0},
+  {q:"Last-click attribution gives all credit to…",o:["The final click before converting","The first ad seen","Every touch equally"],a:0},
+  {q:"Page ranks #8, high impressions, low clicks. Fix?",o:["Improve title & meta to lift CTR","Change the server","Redesign the logo"],a:0},
+  {q:"Lower CPA usually comes from…",o:["Higher relevance & conversion rate","Higher bids only","More impressions"],a:0},
+  {q:"Core Web Vitals measure…",o:["Page experience (speed & stability)","Backlinks","Ad spend"],a:0},
+  {q:"A canonical tag tells Google…",o:["The preferred version of a page","To delete a page","Your budget"],a:0},
+  {q:"robots.txt is used to…",o:["Guide crawlers what to crawl","Design pages","Send email"],a:0},
+  {q:"ROAS is 2x but target is 4x. You should…",o:["Optimise or cut weak spend","Double budget blindly","Do nothing"],a:0},
+  {q:"\"Impression share lost to budget\" means…",o:["Budget too low to always show","Bad creative","No keywords"],a:0},
+  {q:"First-party data is…",o:["Data you collect directly","Bought lists","Competitor data"],a:0},
+  {q:"Which keyword has the strongest buying intent?",o:["\"emergency plumber near me\"","\"how do pipes work\"","\"plumbing history\""],a:0},
+  {q:"A/B test winners should be chosen by…",o:["The statistically better metric","Gut feeling","Alphabetical order"],a:0},
+  {q:"Broad match for 'shoes' could show for…",o:["\"sneaker deals\"","only \"shoes\"","nothing at all"],a:0},
+];
+
+const SCENERY=['🍭','🍦','🍩','🧁','🍫'];
+const TRACKS=[
+  {id:'candy',name:'🍭 Candy',sky:'linear-gradient(180deg,#9ad8ff 0%,#ffc1ea 26%,#ffe0f4 42%,#ead0ff 49%)',r1:'#ff89c9',r2:'#ffd0ec',g1:'#8fe3b6',scenery:['🍭','🍦','🍩','🧁','🍫']},
+  {id:'beach',name:'🏖️ Beach',sky:'linear-gradient(180deg,#37bff5 0%,#9be8ff 30%,#ffe7b3 46%)',r1:'#e9d6a0',r2:'#f5ecd2',g1:'#ffd98a',scenery:['🌴','⛱️','🐚','🍹','🏄']},
+  {id:'night',name:'🌃 Night',sky:'linear-gradient(180deg,#0b1030 0%,#1c2350 38%,#39306a 49%)',r1:'#2a2f48',r2:'#3a4063',g1:'#241a44',scenery:['🏢','🌆','🚦','💡','🌃']},
+];
+const DIFF={easy:{riv:1.95,sp:0,obst:0.32}, normal:{riv:2.12,sp:1,obst:0.44}, hard:{riv:2.34,sp:2,obst:0.56}};
+function groundBG(t){ return `repeating-linear-gradient(0deg,${t.r1} 0 50px,${t.r2} 50px 100px),repeating-linear-gradient(0deg,#fff 0 5px,transparent 5px 50px),linear-gradient(90deg,${t.g1} 0 33%,#ffffff 33% 34%,#5b6b86 34% 66%,#ffffff 66% 67%,${t.g1} 67%)`; }
+const SPORTS={
+  hoops:{name:'Quiz Hoops',icon:'🏀',blurb:'Sink baskets by answering right.',badge:'🏀 SHOOT YOUR SHOT',hit:'SWISH! +',env:'hoops',ball:'basket',ballAnim:'shoot'},
+  padel:{name:'Padel Rally',icon:'🎾',blurb:'Smash winners with correct answers.',badge:'🎾 RETURN THE SHOT',hit:'WINNER! +',env:'padel',ball:'tennis',ballAnim:'volley'},
+  swim:{name:'Speed Swim',icon:'🏊',blurb:'Power through laps by answering.',badge:'🏊 POWER STROKE',hit:'LAP! +',env:'swim',ball:null,figAnim:'dash',pose:'pose-swim'},
+  dance:{name:'Dance Off',icon:'💃',blurb:'Nail the moves with right answers.',badge:'💃 HIT THE MOVE',hit:'PERFECT! +',env:'dance',ball:null,figAnim:'spin',pose:'pose-dance'},
+};
+const ENVHTML={
+  hoops:`<div class="bbset"><div class="bb"></div><div class="rim2"></div><div class="net2"></div></div><div class="carc"></div>`,
+  padel:`<div class="carc"></div><div class="pnet"></div>`,
+  swim:`<div class="lanes2"></div>`,
+  dance:`<div class="spot s1"></div><div class="spot s2"></div><div class="dfloor"></div>`,
+};
+
+let S; try{ S=JSON.parse(localStorage.getItem('tca5')); }catch(e){}
+if(!S) S={name:'',char:null,xp:0,wins:0,muted:false};
+function save(){ try{ localStorage.setItem('tca5',JSON.stringify(S)); }catch(e){} }
+let actx;
+function beep(f,d,t='square',v=.14,w=0){ if(S.muted)return; try{ actx=actx||new (window.AudioContext||window.webkitAudioContext)();
+  const o=actx.createOscillator(),g=actx.createGain(); o.type=t;o.frequency.value=f;o.connect(g);g.connect(actx.destination);
+  const s=actx.currentTime+w; g.gain.setValueAtTime(v,s); g.gain.exponentialRampToValueAtTime(.0001,s+d); o.start(s);o.stop(s+d);}catch(e){} }
+function sfx(k){ if(k==='correct'){beep(660,.08);beep(950,.1,'square',.13,.07);} else if(k==='wrong'){beep(150,.22,'sawtooth',.18);}
+  else if(k==='win'){[523,659,784,1047].forEach((f,i)=>beep(f,.13,'square',.14,i*.1));} else if(k==='go'){beep(880,.18);} else if(k==='count')beep(440,.1);
+  else if(k==='candy'){beep(1000,.07,'square',.12);} else if(k==='crash'){beep(110,.25,'sawtooth',.2);} else if(k==='boost'){beep(500,.12);beep(800,.12,'square',.12,.06);} else if(k==='bump')beep(220,.1,'sawtooth',.12); }
+function toggleMute(){ S.muted=!S.muted; save(); document.getElementById('muteBtn').textContent=S.muted?'🔇':'🔊'; }
+function confetti(){ const c=['#ffd23f','#5fd986','#7cc4ff','#ff8d99','#9b6cf0','#ff7ab0','#2fbf78']; for(let i=0;i<90;i++){ const d=document.createElement('div');
+  d.className='confetti'; d.style.left=(Math.random()*100)+'%'; d.style.background=c[i%c.length];
+  d.style.setProperty('--dx',(Math.random()*360-180)+'px'); d.style.setProperty('--rot',(Math.random()*900-450)+'deg');
+  d.style.animationDelay=(Math.random()*.3)+'s'; document.body.appendChild(d); setTimeout(()=>d.remove(),1900);} }
+function bigConfetti(){ confetti(); setTimeout(confetti,260); setTimeout(confetti,520); }
+function shuffle(a){ for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+function show(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on')); document.getElementById(id).classList.add('on'); }
+function countdown(n,cb,elId){ elId=elId||'count'; const el=document.getElementById(elId);
+  if(n>0){ el.innerHTML=`<span>${n}</span>`; sfx('count'); setTimeout(()=>countdown(n-1,cb,elId),700); }
+  else { el.innerHTML=`<span style="color:#2fbf78">GO!</span>`; sfx('go'); setTimeout(()=>el.innerHTML='',600); cb(); } }
+
+let chosenGame='race', chosenTrack='candy', chosenDiff='normal', pick=null;
+function renderMenu(){ const g=document.getElementById('gameCards'); g.innerHTML='';
+  const cards=[{id:'race',ic:'🏎️',name:'Candy Track Racer',blurb:'Drive, dodge & boost across 3 tracks.'}].concat(Object.keys(SPORTS).map(k=>({id:k,ic:SPORTS[k].icon,name:SPORTS[k].name,blurb:SPORTS[k].blurb})));
+  cards.forEach(c=>{ const d=document.createElement('div'); d.className='gamecard'; d.onclick=()=>selectGame(c.id); d.innerHTML=`<div class="ic">${c.ic}</div><div><b>${c.name}</b><span>${c.blurb}</span></div>`; g.appendChild(d); }); }
+function renderPicks(){ const g=document.getElementById('pickGrid'); g.innerHTML='';
+  CHARS.forEach(c=>{ const d=document.createElement('div'); d.className='pick'+(pick===c.id?' sel':''); d.innerHTML=`<div class="stage">${carUnit(c.colour,AVATARS[c.id])}</div><b>${c.name}</b><span>${c.blurb}</span>`; d.onclick=()=>{ pick=c.id; renderPicks(); chk(); }; g.appendChild(d); }); }
+function renderRaceOpts(){ const tr=document.getElementById('trackRow'); tr.innerHTML='';
+  TRACKS.forEach(t=>{ const b=document.createElement('button'); b.className='opt-pill'+(chosenTrack===t.id?' sel':''); b.textContent=t.name; b.onclick=()=>{chosenTrack=t.id; renderRaceOpts();}; tr.appendChild(b); });
+  const dr=document.getElementById('diffRow'); dr.innerHTML=''; [['easy','Easy'],['normal','Normal'],['hard','Hard']].forEach(([id,l])=>{ const b=document.createElement('button'); b.className='opt-pill'+(chosenDiff===id?' sel':''); b.textContent=l; b.onclick=()=>{chosenDiff=id; renderRaceOpts();}; dr.appendChild(b); }); }
+function selectGame(g){ chosenGame=g; const isRace=g==='race';
+  document.getElementById('raceOpts').style.display=isRace?'block':'none'; if(isRace) renderRaceOpts();
+  document.getElementById('playBtn').textContent = isRace?'RACE 🏎️':('PLAY '+SPORTS[g].icon);
+  document.getElementById('selTitle').textContent = isRace?'CANDY RACER':SPORTS[g].name.toUpperCase();
+  document.getElementById('selHint').innerHTML = isRace ? 'Steer with ← → or the buttons. Dodge ⚠ barriers, grab 🍬⚡🛡️🧲, overtake rivals & answer power questions!' : 'Answer right to earn a shot, then TIME your shot on the bar to score. Beat your rival before time runs out!';
+  show('select'); }
+function chk(){ document.getElementById('playBtn').disabled=!(pick && document.getElementById('nameInput').value.trim()); }
+function beginGame(){ S.name=document.getElementById('nameInput').value.trim(); S.char=pick; save(); if(chosenGame==='race') startRace(); else startSport(chosenGame); }
+
+/* RACE */
+const GOAL=3200, LANES=[26,50,74], SPAWN=130;
+let G=null, loopId=null;
+function place(el,lane,f,baseLeft){ const bottom=11+f*47, scale=Math.max(0.12,1.2-f*1.0), lx=baseLeft!==undefined?baseLeft:LANES[lane], left=50+(lx-50)*(1-f*0.55);
+  el.style.bottom=bottom+'%'; el.style.left=left+'%'; el.style.transform='translate(-50%,0) scale('+scale.toFixed(3)+')'; el.style.zIndex=String(30-Math.round(f*20)); }
+function startRace(){
+  const t=TRACKS.find(x=>x.id===chosenTrack)||TRACKS[0], d=DIFF[chosenDiff]||DIFF.normal, others=shuffle(CHARS.filter(c=>c.id!==S.char)).slice(0,3);
+  G={ playing:false, tick:0, lastQ:0, qActive:false, candy:0, lane:1, speed:2.0, dist:0, items:[], scen:[], spawnT:0, scenT:0, finishSpawned:false,
+      shield:false, magnetT:0, diff:d, scenery:t.scenery, colour:CHARS.find(c=>c.id===S.char).colour, av:AVATARS[S.char],
+      rivals:others.map((c,i)=>({dist:40+Math.random()*150, speed:d.riv+i*0.06, lane:i%3, av:AVATARS[c.id], colour:c.colour, weave:0, bumpCd:0, el:null})), pool:shuffle(QUESTIONS.slice()), qi:0 };
+  document.getElementById('scene').style.background=t.sky; document.getElementById('ground').style.backgroundImage=groundBG(t);
+  const pc=document.getElementById('playerCar'); pc.className='playercar'; pc.innerHTML=carUnit(G.colour,G.av);
+  document.getElementById('items').innerHTML=''; document.getElementById('scenery').innerHTML='';
+  const rv=document.getElementById('rivals'); rv.innerHTML='';
+  G.rivals.forEach(r=>{ const el=document.createElement('div'); el.className='rivalcar'; el.style.width='min(140px,40%)'; el.innerHTML=carUnit(r.colour,r.av); rv.appendChild(el); r.el=el; });
+  const prog=document.getElementById('prog'); prog.querySelectorAll('.pmark').forEach(m=>m.remove());
+  G.marks=[{c:'#ffd23f'}].concat(G.rivals.map(r=>({c:r.colour}))).map(o=>{ const m=document.createElement('div'); m.className='pmark'; m.style.background=o.c; prog.appendChild(m); return m; });
+  ['cl1','cl2','cl3'].forEach((id,i)=>{ document.getElementById(id).style.animation=`drift ${6+i*2}s ease-in-out infinite alternate`; });
+  document.getElementById('qpanel').classList.remove('show'); document.getElementById('scene').classList.remove('qmode');
+  setPlayerX(); updateHud(); show('race'); countdown(3,()=>{ G.playing=true; loopId=setInterval(loop,40); });
+}
+function setPlayerX(){ document.getElementById('playerCar').style.left=LANES[G.lane]+'%'; }
+function moveLane(dir){ if(!G||!G.playing||G.qActive) return; const nl=Math.max(0,Math.min(2,G.lane+dir)); if(nl===G.lane) return; G.lane=nl; setPlayerX();
+  const pc=document.getElementById('playerCar'); pc.classList.remove('leanL','leanR'); void pc.offsetWidth; pc.classList.add(dir<0?'leanL':'leanR'); setTimeout(()=>pc.classList.remove('leanL','leanR'),260); }
+function loop(){ if(!G.playing||G.qActive) return; G.tick++;
+  const prog=G.dist/GOAL; G.speed += (2.0+prog*1.2 - G.speed)*0.05; G.dist += G.speed; if(G.magnetT>0) G.magnetT--;
+  G.rivals.forEach(r=>{ r.dist += r.speed + prog*0.4 + (Math.random()*0.3-0.15); if(r.bumpCd>0)r.bumpCd--; r.weave--;
+    if(r.weave<=0){ r.weave=40+Math.floor(Math.random()*60); if(Math.random()<0.65){ const g=r.dist-G.dist; r.lane=(Math.random()<0.35 && g>-10 && g<70)?G.lane:Math.floor(Math.random()*3); } } });
+  document.getElementById('ground').style.animationDuration=Math.max(0.14,0.95-Math.min(G.speed,5.5)*0.15)+'s';
+  document.getElementById('speedlines').classList.toggle('on',G.speed>3.0);
+  G.spawnT++; const spInt=Math.max(8,17-Math.floor(prog*8)-G.diff.sp); if(G.spawnT>=spInt){ G.spawnT=0; spawnRow(prog); }
+  G.scenT++; if(G.scenT>=8){ G.scenT=0; spawnScenery(); }
+  if(!G.finishSpawned && G.dist>GOAL-SPAWN){ G.finishSpawned=true; G.items.push({lane:1,z:SPAWN,type:'finish',el:makeItem(1,'finish'),done:true}); }
+  updateItems(); updateScenery(); updateRivals(); updateHud();
+  if(!G.qActive && G.tick-G.lastQ>140 && G.dist<GOAL-130) showRaceQ();
+  if(G.dist>=GOAL || G.rivals.some(r=>r.dist>=GOAL)) finishRace();
+}
+function makeItem(lane,type){ const el=document.createElement('div'); el.className='item';
+  const emoji = type==='candy'?'🍬': type==='boost'?'⚡': type==='shield'?'🛡️': type==='magnet'?'🧲':'';
+  el.innerHTML = type==='obst'?`<div class="shadow"></div><div class="obst"></div>` : type==='finish'?`<div class="finish"></div>` : `<div class="candy">${emoji}</div>`;
+  document.getElementById('items').appendChild(el); return el; }
+function spawnRow(prog){ if(Math.random()<G.diff.obst+prog*0.2){ const lanes=[0,1,2], blocked=[lanes.splice(Math.floor(Math.random()*3),1)[0]];
+    if(prog>0.3 && Math.random()<(0.3+G.diff.sp*0.08)) blocked.push(lanes.splice(Math.floor(Math.random()*lanes.length),1)[0]);
+    blocked.forEach(l=> G.items.push({lane:l,z:SPAWN,type:'obst',el:makeItem(l,'obst'),done:false})); }
+  else { const l=Math.floor(Math.random()*3), r=Math.random(); const t=r<0.68?'candy':r<0.83?'boost':r<0.92?'shield':'magnet'; G.items.push({lane:l,z:SPAWN,type:t,el:makeItem(l,t),done:false}); } }
+function spawnScenery(){ const side=Math.random()<0.5?6:94, list=G.scenery||SCENERY, icon=list[Math.floor(Math.random()*list.length)]; const el=document.createElement('div'); el.className='item tree'; el.innerHTML=`<div class="treeicon">${icon}</div>`; document.getElementById('scenery').appendChild(el); G.scen.push({x:side,z:SPAWN,el}); }
+function updateItems(){ for(let i=G.items.length-1;i>=0;i--){ const it=G.items[i]; it.z-=G.speed; const f=Math.max(0,Math.min(1,it.z/SPAWN)); place(it.el,it.lane,f);
+  if(!it.done && it.z<=2){ it.done=true; const inLane=it.lane===G.lane;
+    if(it.type==='obst'&&inLane){ if(G.shield){ G.shield=false; G.speed=Math.min(G.speed,2.2); sfx('bump'); } else { G.speed=0.55; sfx('crash'); flashCar('crash'); } }
+    else if(it.type==='candy'&&(inLane||G.magnetT>0)){ G.candy++; G.dist+=6; G.speed=Math.min(4.2,G.speed+0.4); sfx('candy'); }
+    else if(it.type==='boost'&&inLane){ G.speed=5.0; G.dist+=16; sfx('boost'); flashCar('boost'); }
+    else if(it.type==='shield'&&inLane){ G.shield=true; sfx('boost'); }
+    else if(it.type==='magnet'&&inLane){ G.magnetT=170; sfx('boost'); } }
+  if(it.z<-28){ it.el.remove(); G.items.splice(i,1); } } }
+function updateScenery(){ for(let i=G.scen.length-1;i>=0;i--){ const s=G.scen[i]; s.z-=G.speed; const f=Math.max(0,Math.min(1,s.z/SPAWN)); place(s.el,0,f,s.x); if(s.z<-28){ s.el.remove(); G.scen.splice(i,1); } } }
+function updateRivals(){ G.rivals.forEach(r=>{ const gap=r.dist-G.dist; if(gap>SPAWN||gap<-34){ r.el.style.opacity=0; return; } r.el.style.opacity=1;
+  place(r.el,r.lane,Math.max(0,Math.min(1,gap/SPAWN))); if(r.bumpCd<=0 && Math.abs(gap)<7 && r.lane===G.lane){ r.bumpCd=30; G.speed=Math.min(G.speed,1.2); sfx('bump'); } }); }
+function flashCar(cls){ const pc=document.getElementById('playerCar'); pc.classList.remove('boost','crash'); void pc.offsetWidth; pc.classList.add(cls); setTimeout(()=>pc.classList.remove(cls),400); }
+function updateHud(){ document.getElementById('distLabel').textContent=Math.min(100,Math.round(G.dist/GOAL*100))+'%';
+  document.getElementById('candyLabel').textContent='🍬 '+G.candy; let pu=''; if(G.shield)pu+='🛡️'; if(G.magnetT>0)pu+='🧲'; document.getElementById('puLabel').textContent=pu;
+  const rank=1+G.rivals.filter(r=>r.dist>G.dist).length; document.getElementById('posLabel').textContent=rank+(rank===1?'st':rank===2?'nd':rank===3?'rd':'th');
+  G.marks[0].style.left=Math.min(99,G.dist/GOAL*100)+'%'; G.rivals.forEach((r,i)=>G.marks[i+1].style.left=Math.min(99,r.dist/GOAL*100)+'%'); }
+function showRaceQ(){ G.qActive=true; document.getElementById('scene').classList.add('qmode');
+  const q=G.pool[G.qi%G.pool.length], order=shuffle(q.o.map((text,idx)=>({text,correct:idx===q.a})));
+  const p=document.getElementById('qpanel'); p.innerHTML=`<div class="qbadge">⚡ POWER QUESTION</div><div class="qtext">${q.q}</div><div id="qopts"></div>`;
+  const box=document.getElementById('qopts'); order.forEach(o=>{ const b=document.createElement('button'); b.className='qopt'; b.textContent=o.text; b.onclick=()=>raceAns(o.correct,b); box.appendChild(b); }); p.classList.add('show'); }
+function raceAns(correct,btn){ document.querySelectorAll('#qopts .qopt').forEach(b=>b.disabled=true); const q=G.pool[G.qi%G.pool.length];
+  if(correct){ btn.classList.add('right'); sfx('correct'); G.dist+=36; G.speed=5.2; flashCar('boost'); }
+  else { btn.classList.add('bad'); sfx('wrong'); G.speed=0.8; document.querySelectorAll('#qopts .qopt').forEach(b=>{ if(b.textContent===q.o[q.a]) b.classList.add('right'); }); }
+  G.qi++; setTimeout(()=>{ document.getElementById('qpanel').classList.remove('show'); document.getElementById('scene').classList.remove('qmode'); G.qActive=false; G.lastQ=G.tick; },700); }
+function finishRace(){ G.playing=false; clearInterval(loopId); document.getElementById('qpanel').classList.remove('show'); document.getElementById('scene').classList.remove('qmode');
+  const rank=1+G.rivals.filter(r=>r.dist>G.dist).length, won=rank===1, xp=(won?100:rank===2?60:rank===3?40:25)+G.candy*2; S.xp+=xp; if(won)S.wins++; save();
+  const medal=won?'🥇':rank===2?'🥈':rank===3?'🥉':'🏅'; if(won){ sfx('win'); bigConfetti(); } else sfx('wrong');
+  result(medal, won?'YOU WON!':rank+(rank===2?'nd':rank===3?'rd':'th')+' place', won?'First across the line! 🏁':'Overtake more rivals & grab the boosts!', `+${xp} XP · 🍬 ${G.candy} · 🏆 ${S.wins} wins`, ()=>startRace()); }
+function quitRace(){ if(G)G.playing=false; clearInterval(loopId); show('menu'); }
+document.addEventListener('keydown',e=>{ if(e.key==='ArrowLeft'){e.preventDefault();moveLane(-1);} else if(e.key==='ArrowRight'){e.preventDefault();moveLane(1);} });
+document.getElementById('ctrlL').addEventListener('click',()=>moveLane(-1));
+document.getElementById('ctrlR').addEventListener('click',()=>moveLane(1));
+document.getElementById('scene').addEventListener('click',e=>{ if(e.target.closest('.ctrl,.quit,.qpanel,.count'))return; moveLane(e.clientX<window.innerWidth/2?-1:1); });
+
+/* SPORT */
+let H=null, hClock=null, tInt=null, tPos=0, tDir=1, tActive=false;
+function startSport(id){ const cfg=SPORTS[id]; const rival=CHARS.filter(c=>c.id!==S.char)[Math.floor(Math.random()*3)];
+  H={ cfg, playing:false, score:0, opp:0, time:75, qActive:false, streak:0, makes:0, att:0, oppT:6, rivalAv:AVATARS[rival.id], pool:shuffle(QUESTIONS.slice()), qi:0 };
+  document.getElementById('sportScene').className='sportscene env-'+id; document.getElementById('sportEnv').innerHTML=ENVHTML[id]||'';
+  resetActor(); resetBall(); renderSboard(); document.getElementById('sqpanel').classList.remove('show'); document.getElementById('timing').classList.remove('show');
+  show('sport'); countdown(3,()=>{ H.playing=true; hClock=setInterval(sportTick,1000); nextSportQ(); },'scount'); }
+function renderSboard(){ document.getElementById('sboard').innerHTML=`<div class="sb-team"><div class="av">${AVATARS[S.char]}</div><span class="sb-score">${H.score}</span></div><div class="sb-time">⏱ ${H.time}</div><div class="sb-team"><span class="sb-score">${H.opp}</span><div class="av">${H.rivalAv}</div></div>`; }
+function resetActor(){ const a=document.getElementById('sportActor'); a.className='sportactor'+(H.cfg.pose?' '+H.cfg.pose:''); a.innerHTML=`<div class="figure"><div class="fhead">${AVATARS[S.char]}</div>${figureSVG(CHARS.find(c=>c.id===S.char).colour)}</div>`; }
+function resetBall(){ const b=document.getElementById('sball'); if(H.cfg.ball){ b.style.display='block'; b.className='sball '+H.cfg.ball; b.style.opacity=1; } else { b.style.display='none'; } }
+function sportTick(){ if(!H.playing) return; H.time--; H.oppT--; if(H.oppT<=0){ if(Math.random()<0.78) H.opp+=2; H.oppT=4+Math.floor(Math.random()*4); } renderSboard(); if(H.time<=0) endSport(); }
+function nextSportQ(){ if(!H.playing) return; H.qActive=true; const q=H.pool[H.qi%H.pool.length], order=shuffle(q.o.map((t,i)=>({t,c:i===q.a})));
+  const p=document.getElementById('sqpanel'); p.innerHTML=`<div class="qbadge">${H.cfg.badge}</div><div class="qtext">${q.q}</div><div id="sqopts"></div>`;
+  const box=document.getElementById('sqopts'); order.forEach(o=>{ const b=document.createElement('button'); b.className='qopt'; b.textContent=o.t; b.onclick=()=>sportAns(o.c,b); box.appendChild(b); }); p.classList.add('show'); }
+function sportAns(correct,btn){ document.querySelectorAll('#sqopts .qopt').forEach(b=>b.disabled=true); const q=H.pool[H.qi%H.pool.length]; H.att++; H.qi++; const a=document.getElementById('sportActor');
+  if(correct){ btn.classList.add('right'); sfx('correct'); setTimeout(()=>{ document.getElementById('sqpanel').classList.remove('show'); startTiming(); },450); }
+  else { btn.classList.add('bad'); H.streak=0; a.className='sportactor missx'; sfx('wrong'); sFloat('WRONG!','#ff9aa2'); document.querySelectorAll('#sqopts .qopt').forEach(b=>{ if(b.textContent===q.o[q.a]) b.classList.add('right'); });
+    setTimeout(()=>{ document.getElementById('sqpanel').classList.remove('show'); resetActor(); H.qActive=false; if(H.playing) nextSportQ(); },950); } }
+function startTiming(){ if(!H||!H.playing) return; tActive=true; tPos=0; tDir=1; const spd=2.0+Math.min(H.makes*0.06,1.8);
+  document.getElementById('timing').classList.add('show'); clearInterval(tInt); tInt=setInterval(()=>{ tPos+=tDir*spd; if(tPos>=100){tPos=100;tDir=-1;} if(tPos<=0){tPos=0;tDir=1;} document.getElementById('tmark').style.left=tPos+'%'; },16); }
+function lockShot(){ if(!tActive) return; tActive=false; clearInterval(tInt); document.getElementById('timing').classList.remove('show');
+  const p=tPos, perfect=Math.abs(p-50)<=3.5, good=Math.abs(p-50)<=14, a=document.getElementById('sportActor');
+  if(perfect||good){ const pts=perfect?3:2; H.score+=pts; H.makes++; H.streak++;
+    if(H.cfg.ball){ const b=document.getElementById('sball'); b.className='sball '+H.cfg.ball+' '+H.cfg.ballAnim; } else { a.className='sportactor hit-'+H.cfg.figAnim; }
+    sfx('correct'); sFloat(perfect?'🔥 PERFECT +3':H.cfg.hit+'2','#9bf0c0'); }
+  else { H.streak=0; a.className='sportactor missx'; sfx('wrong'); sFloat('RIMMED OUT!','#ff9aa2'); }
+  renderSboard(); setTimeout(()=>{ resetActor(); resetBall(); H.qActive=false; if(H.playing) nextSportQ(); },950); }
+function sFloat(t,c){ const f=document.getElementById('sfloat'); f.textContent=t; f.style.color=c||'#fff'; f.classList.remove('show'); void f.offsetWidth; f.classList.add('show'); }
+function endSport(){ H.playing=false; clearInterval(hClock); clearInterval(tInt); tActive=false; document.getElementById('sqpanel').classList.remove('show'); document.getElementById('timing').classList.remove('show');
+  const won=H.score>H.opp, tie=H.score===H.opp, xp=(won?100:tie?50:40)+H.makes*3; S.xp+=xp; if(won)S.wins++; save();
+  const medal=won?'🏆':tie?'🤝':'😤'; if(won){ sfx('win'); bigConfetti(); } else sfx('wrong');
+  result(medal, won?'YOU WIN!':tie?'TIED!':'YOU LOST', `Final ${H.score} – ${H.opp} · ${H.makes}/${H.att} made`, `+${xp} XP · 🏆 ${S.wins} wins`, ()=>startSport(chosenGame)); }
+function quitSport(){ if(H)H.playing=false; clearInterval(hClock); clearInterval(tInt); tActive=false; show('menu'); }
+document.getElementById('sportScene').addEventListener('click',e=>{ if(tActive && !e.target.closest('.quit')) lockShot(); });
+document.addEventListener('keydown',e=>{ if(e.key===' ' && tActive){ e.preventDefault(); lockShot(); } });
+
+function result(medal,title,sub,xp,again){ window._again=again;
+  document.getElementById('resultCard').innerHTML=`<div class="medal">${medal}</div><h2>${title}</h2><p>${sub}</p><div class="xp">${xp}</div><div class="rbtns"><button class="rbtn go" onclick="closeR();window._again()">PLAY AGAIN</button><button class="rbtn alt" onclick="closeR();show('menu')">CHANGE GAME</button></div>`;
+  document.getElementById('scrim').classList.add('on'); }
+function closeR(){ document.getElementById('scrim').classList.remove('on'); }
+
+document.getElementById('nameInput').addEventListener('input',chk);
+document.getElementById('muteBtn').textContent=S.muted?'🔇':'🔊';
+if(S.name) document.getElementById('nameInput').value=S.name;
+if(S.char) pick=S.char;
+renderMenu(); renderPicks(); chk();
+</script>
+</body>
+</html>
